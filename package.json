@@ -1,0 +1,45 @@
+{
+  "name": "@blueskydotbot/cli",
+  "version": "0.1.1",
+  "description": "Manage your Bluesky bots and their name.bluesky.bot handles from the terminal.",
+  "keywords": [
+    "bluesky",
+    "atproto",
+    "bot",
+    "handle",
+    "cli"
+  ],
+  "homepage": "https://bluesky.bot/docs/cli",
+  "bugs": {
+    "url": "https://github.com/blueskydotbot/cli/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blueskydotbot/cli.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "bsbot": "dist/bin.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}

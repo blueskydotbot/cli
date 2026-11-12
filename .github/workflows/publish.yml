@@ -1,0 +1,288 @@
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+  # Re-runs the GitHub Release and the Bluesky post of a version already on
+  # npm. Only from that version's tag (checked below): the bluesky
+  # environment only accepts tags, and the notes come from the tagged files.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Stable version already on npm (X.Y.Z)"
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      stable: ${{ steps.version.outputs.stable }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # to check that the tag is on main
+
+      - name: Version
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.ref_name }}
+          INPUT: ${{ inputs.version }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            version="$INPUT"
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error title=Invalid version::Expected a stable X.Y.Z."
+              exit 1
+            fi
+            if [ "$GITHUB_REF" != "refs/tags/v$version" ]; then
+              echo "::error title=Wrong ref::Run this from the tag v$version."
+              exit 1
+            fi
+            name="$(node -p "require('./package.json').name")"
+            if ! npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "::error title=Not on npm::$name@$version is not published."
+              exit 1
+            fi
+          else
+            version="${TAG#v}"
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error title=Invalid tag::Expected vX.Y.Z or vX.Y.Z-rc.N."
+              exit 1
+            fi
+          fi
+          stable=true
+          if [[ "$version" == *-* ]]; then stable=false; fi
+          {
+            echo "version=$version"
+            echo "stable=$stable"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check the release
+        if: github.event_name == 'push'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$VERSION" != "$pkg" ]; then
+            echo "::error title=Version mismatch::Tag v$VERSION, package.json $pkg."
+            exit 1
+          fi
+          if ! grep -qF "## [$VERSION]" CHANGELOG.md; then
+            echo "::error title=Changelog::CHANGELOG.md has no \"## [$VERSION]\" section."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error title=Not on main::Tag only commits that are on main."
+            exit 1
+          fi
+
+  test:
+    name: Node ${{ matrix.node }}
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        node: ["22", "24"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+  publish:
+    name: Publish to npm
+    needs: [version, test]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Required reviewer and tag rule are set on the environment; the npm
+    # trusted publisher only accepts this workflow in this environment.
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
+      latest: ${{ steps.publish.outputs.latest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      # Trusted publishing needs npm 11.5.1 or later.
+      - name: Install npm
+        run: npm install --global npm@12.2.2
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Check the version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error title=Version mismatch::Tag $TAG, package.json $version."
+            exit 1
+          fi
+
+      - name: Publish
+        id: publish
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          if npm view "$name@$VERSION" version >/dev/null 2>&1; then
+            echo "::notice title=Already published::$name@$VERSION is already on npm."
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # npm moves `latest` to whatever is published: keep it on the newest line.
+          latest="$(npm view "$name" dist-tags.latest 2>/dev/null || true)"
+          dist_tag=latest
+          if [[ "$VERSION" == *-* ]]; then
+            dist_tag=next
+          elif [ -n "$latest" ] && [ "$(printf '%s\n%s\n' "$latest" "$VERSION" | sort -V | tail -n 1)" != "$VERSION" ]; then
+            dist_tag="release-${VERSION%.*}"
+          fi
+          npm publish --tag "$dist_tag"
+          {
+            echo "published=true"
+            echo "latest=$([ "$dist_tag" = latest ] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+          node dist/bin.js --version
+
+  # Stable versions only, once actually published (or by hand from a tag).
+  # A patch to an older line gets a release, but neither `latest` nor a post.
+  release:
+    name: GitHub Release
+    needs: [version, publish]
+    if: >-
+      !cancelled() && needs.version.result == 'success' &&
+      needs.version.outputs.stable == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (needs.publish.result == 'success' && needs.publish.outputs.published == 'true'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      latest: ${{ steps.latest.outputs.latest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Is it the latest version
+        id: latest
+        env:
+          EVENT: ${{ github.event_name }}
+          VERSION: ${{ needs.version.outputs.version }}
+          PUBLISHED_LATEST: ${{ needs.publish.outputs.latest }}
+        run: |
+          latest="$PUBLISHED_LATEST"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            current="$(npm view "$(node -p "require('./package.json').name")" dist-tags.latest)"
+            latest=false
+            if [ "$current" = "$VERSION" ]; then latest=true; fi
+          fi
+          if [ "$latest" != true ]; then latest=false; fi
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+          LATEST: ${{ steps.latest.outputs.latest }}
+        run: |
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::notice title=Release exists::v$VERSION already has a GitHub Release."
+            exit 0
+          fi
+          notes="$RUNNER_TEMP/notes.md"
+          node scripts/announce.mjs notes "$VERSION" > "$notes"
+          gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --latest="$LATEST" --title "bsbot $VERSION" --notes-file "$notes"
+
+  # A failed post never fails the release: the script warns and exits 0.
+  announce:
+    name: Announce on Bluesky
+    needs: [version, release]
+    if: ${{ !cancelled() && needs.release.result == 'success' && needs.release.outputs.latest == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    continue-on-error: true
+    environment: bluesky
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Post
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          BLUESKY_HANDLE: ${{ vars.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+          BLUESKY_PDS_URL: ${{ vars.BLUESKY_PDS_URL }}
+        run: node scripts/announce.mjs post
