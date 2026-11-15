@@ -140,6 +140,71 @@ describe("Api", () => {
     });
   });
 
+  it("sends a listing patch as JSON, with the User-Agent", async () => {
+    const fetch = vi.fn(async () =>
+      json(200, { listing: { listed: false }, changed: true }),
+    );
+    await new Api("https://bluesky.bot", fetch, "t").updateListing(
+      "did:plc:abc",
+      { listed: false },
+    );
+
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(
+      "https://bluesky.bot/api/v1/me/bots/did%3Aplc%3Aabc/listing",
+    );
+    expect(init.method).toBe("PATCH");
+    expect(init.body).toBe('{"listed":false}');
+    expect(init.headers).toMatchObject({
+      "Content-Type": "application/json",
+      "User-Agent": `bsbot/${VERSION}`,
+    });
+  });
+
+  it("keeps the details of an error: field, reason, parameter, scope", async () => {
+    const fetch = vi.fn(async () =>
+      json(400, {
+        error: {
+          code: "invalid_listing",
+          message: "Refused.",
+          field: "usage[1].example",
+          reason: "mention",
+          other: "ignored",
+          scope: 3,
+        },
+      }),
+    );
+    const error = await new Api("https://bluesky.bot", fetch, "t")
+      .updateListing("did:plc:abc", {})
+      .catch((e: unknown) => e);
+
+    expect(error).toMatchObject({
+      status: 400,
+      code: "invalid_listing",
+      details: { field: "usage[1].example", reason: "mention" },
+    });
+    expect((error as ApiError).details).not.toHaveProperty("scope");
+  });
+
+  it("puts a tool's parameters in the query string", async () => {
+    const fetch = vi.fn(async () =>
+      json(200, {
+        tool: "whois",
+        url: "https://bluesky.bot/tools/whois",
+        result: {},
+      }),
+    );
+    await new Api("https://bluesky.bot", fetch).tool("whois", [
+      ["q", "bsky.app & co"],
+    ]);
+
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(
+      "https://bluesky.bot/api/v1/tools/whois?q=bsky.app+%26+co",
+    );
+    expect(init.headers).not.toHaveProperty("Authorization");
+  });
+
   it("accepts an empty 204", async () => {
     const fetch = vi.fn(async () => new Response(null, { status: 204 }));
     await expect(

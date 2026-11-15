@@ -39,5 +39,6 @@ const code = await run(process.argv.slice(2), {
   fetch,
   openBrowser,
   confirm: interactive ? confirm : null,
+  color: Boolean(process.stdout.isTTY),
 });
 process.exitCode = code;
