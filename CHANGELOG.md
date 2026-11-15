@@ -9,6 +9,8 @@ public interface.
 
 ## [Unreleased]
 
+## [0.2.0] - YYYY-MM-DD
+
 ### Added
 
 - `bsbot doctor` runs your bot's checkup, with a link to fix each problem.

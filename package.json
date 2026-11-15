@@ -1,6 +1,6 @@
 {
   "name": "@blueskydotbot/cli",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Manage your Bluesky bots and their name.bluesky.bot handles from the terminal.",
   "keywords": [
     "bluesky",
