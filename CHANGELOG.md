@@ -9,6 +9,12 @@ public interface.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-16
+
+The repository metadata changes previously labelled `0.1.1` were never
+published to npm; they are included here. Preparing this release source does
+not establish that the package is available in the registry.
+
 ### Added
 
 - `bsbot init` creates an offline TypeScript or Python starter, optionally
@@ -48,15 +54,8 @@ public interface.
 
 - A token that lacks a permission (`403 insufficient_scope`) prints the
   server's message and asks you to run `bsbot login` again.
-
-## [0.1.1] - 2026-11-12
-
-### Changed
-
 - Source code, issues and pull requests are now on
   [github.com/blueskydotbot/cli](https://github.com/blueskydotbot/cli).
-- Published from there with npm provenance, and a GitHub Release for each
-  stable version.
 - The package's repository and issue links point to the new repository (it
   was renamed from blueskydotbot/bsbot-cli).
 

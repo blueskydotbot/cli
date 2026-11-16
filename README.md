@@ -38,12 +38,14 @@ example `npx @blueskydotbot/cli login`). Other package managers work too:
 
 Requirements: macOS or Linux, Node.js 22 or later. No dependency.
 
-## Development status
+## Release source
 
-This README describes the source under development. The listing, checkup, init
-and tool additions below are unreleased; use your installed `bsbot --help` to check
-its available commands. The server support must be deployed before a CLI
-version using it is published; see [RELEASING.md](RELEASING.md).
+This README describes the `0.2.0` release source. Listing, checkup, init and
+tool commands were added after npm version `0.1.0`; source version `0.1.1`
+was never published. Preparing or packing this source does not publish it.
+Check `npm view @blueskydotbot/cli dist-tags` and your installed `bsbot --help`
+for availability. The server support must be deployed before a CLI version
+using it is published; see [RELEASING.md](RELEASING.md).
 
 ## Usage
 

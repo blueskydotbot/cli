@@ -1,22 +1,57 @@
 # Releasing
 
-How a maintainer publishes `@blueskydotbot/cli` (the `bsbot` command). npm
-publishing uses trusted publishing: no npm token is stored anywhere, and every
-version is published by `.github/workflows/publish.yml` with provenance.
+How a maintainer publishes `@blueskydotbot/cli` (the `bsbot` command). The
+repository contains a trusted-publishing workflow, currently paused. This
+release preparation stores no npm credential and does not run that workflow.
 
-## Develop integration pause
+## Current release preparation
 
-The work in `develop` is not a release. CI and publishing have manual triggers
-only, and Dependabot version pull requests are paused. Repository Actions must
-also remain disabled during this integration. Do not dispatch a workflow,
-create a tag, publish npm, create a Release or announce a version as part of
-this work. The retained manual Publish path only repairs an already published
-version from its existing tag; it does not publish npm.
+The `0.2.0` candidate is prepared from the reviewed `develop` source. Its
+changelog date is 16 November 2026 in Europe/Paris. The registry readback during
+preparation reported only `0.1.0`; the source-only `0.1.1` changes are included
+in `0.2.0`, without inventing an earlier npm release.
 
-The release procedure below describes a later, separately approved release.
-A maintainer must first restore the intended automation, approve publication,
-and verify that the server requirements are live. Keeping the current source
-version does not claim these additions are available on npm.
+The npm publication request does not authorize GitHub Actions, pull requests,
+pushes to `main` or `staging`, deployments, GitHub Releases or announcements.
+CI and publishing remain manual-only; repository Actions and Dependabot
+version pull requests remain paused. Do not dispatch the retained workflow:
+its manual path repairs release notes for an already published version and
+may post an announcement.
+
+A version bump or a local tarball is not publication evidence. Publication
+still requires an authenticated maintainer route, deployed server support
+and the normal template release guard below. A registry `ENEEDAUTH` response
+must be resolved by the maintainer; it is not a reason to bypass lifecycle
+scripts or activate Actions. No credential belongs in these files or logs.
+
+### Repository metadata on npm
+
+npm's Repository and Bugs links come from the published version's metadata.
+The published `0.1.0` can therefore still link to `bsbot-cli` while the reviewed
+source already names `blueskydotbot/cli`. Both `package.json` and the packed
+`0.2.0` package must contain:
+
+```json
+{
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blueskydotbot/cli.git"
+  },
+  "bugs": { "url": "https://github.com/blueskydotbot/cli/issues" },
+  "homepage": "https://bluesky.bot/docs/cli"
+}
+```
+
+After a successful, separately executed publication, verify the exact version
+before claiming the npm page is updated:
+
+```bash
+npm view @blueskydotbot/cli@0.2.0 version repository bugs homepage --json
+npm view @blueskydotbot/cli dist-tags --json
+```
+
+Changing GitHub or the working-tree manifest alone does not replace the
+metadata of an already published npm version.
 
 ## Template provenance
 
@@ -46,7 +81,11 @@ Test a packed archive outside this checkout on Node 22 and 24, including
 after the CLI version is actually on npm may the site advertise `bsbot init`
 as an available published command or templates pin that released CLI version.
 
-## Release a version
+## Historical workflow procedure
+
+The following workflow procedure is retained for future, separately approved
+automation. It is not the current release-preparation route and does not
+authorize a workflow dispatch, tag, `main` push, release or social post.
 
 1. Make sure everything the new version needs on the bluesky.bot server is
    already live in production (see [API compatibility](#api-compatibility)).
