@@ -1,0 +1,26 @@
+{
+  "name": "my-bluesky-bot",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node --import tsx src/bot.ts",
+    "test": "node --import tsx --test test/*.test.mjs"
+  },
+  "license": "MIT-0",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.18.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.18.0",
+  "type": "module",
+  "dependencies": {
+    "@atproto/api": "0.31.0",
+    "tsx": "4.23.15"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  }
+}

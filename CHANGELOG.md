@@ -11,6 +11,12 @@ public interface.
 
 ### Added
 
+- `bsbot init` creates an offline TypeScript or Python starter, optionally
+  prefills a private bot listing, initializes Git, and prints setup steps.
+  It supports `--template`, `--bot`, `--no-git`, `--yes` and `--json`, never
+  overwrites files, and omits e-mail contacts and hidden operator names from
+  generated Git content. Bundled snapshots are pinned to immutable commits;
+  publishing requires verified matching template tags.
 - `bsbot doctor` runs your bot's checkup, with a link to fix each problem.
   It checks the Automation label, bio, avatar, description, operator line,
   handle and listing of one bot, or of every bot (`--strict`, `--verbose`),
@@ -36,6 +42,9 @@ public interface.
   `--no-description`, `--operator`, `--no-operator`, `--show-operator` and
   `--hide-operator` while preserving the original aliases.
 - An explicitly empty `BSBOT_TOKEN` is refused, without reading saved credentials.
+- Listing files accept explicit `contactEmailPublic` and `usesGenerativeAi`
+  booleans, retaining explicit consent when a contact changes and preserving
+  server disclosure errors without inventing an answer.
 
 - A token that lacks a permission (`403 insufficient_scope`) prints the
   server's message and asks you to run `bsbot login` again.

@@ -4,6 +4,48 @@ How a maintainer publishes `@blueskydotbot/cli` (the `bsbot` command). npm
 publishing uses trusted publishing: no npm token is stored anywhere, and every
 version is published by `.github/workflows/publish.yml` with provenance.
 
+## Develop integration pause
+
+The work in `develop` is not a release. CI and publishing have manual triggers
+only, and Dependabot version pull requests are paused. Repository Actions must
+also remain disabled during this integration. Do not dispatch a workflow,
+create a tag, publish npm, create a Release or announce a version as part of
+this work. The retained manual Publish path only repairs an already published
+version from its existing tag; it does not publish npm.
+
+The release procedure below describes a later, separately approved release.
+A maintainer must first restore the intended automation, approve publication,
+and verify that the server requirements are live. Keeping the current source
+version does not claim these additions are available on npm.
+
+## Template provenance
+
+`templates/manifest.json` pins each complete snapshot to a repository, immutable
+commit, file mode and SHA-256. The current snapshots are explicitly unpublished;
+no tag is assumed to exist. `npm run build` verifies the source snapshots and
+encodes them in `dist/templates/*.json`, so `.gitignore` and nested workflow
+files survive npm packing. `npm run templates:check` verifies the local source
+trees without changing them. `init` validates the payload hashes and portable
+paths before writing any project file, and never downloads a template.
+
+Before a future release, publish the reviewed template commits under real
+immutable tags in their intended public repositories. Update each manifest's
+`ref` to its actual `refs/tags/v...` value and `published` to `true`, retaining
+the exact commit and complete file list. If a template changes, replace its
+tracked snapshot, modes and hashes from the newly reviewed commit first.
+Run `npm run templates:release`: it builds locally, refuses either unpublished
+snapshot before any network request, then reads each real Git tag without
+checking out or executing its code. Both tag commit and complete blob tree
+must match the bundled payload. A changed, missing or retargeted tag fails.
+The publish workflow explicitly runs this check, and `prepublishOnly` repeats
+it for normal npm publishing. Do not bypass lifecycle scripts when publishing.
+Local `npm pack` remains available for testing unpublished development source.
+
+Test a packed archive outside this checkout on Node 22 and 24, including
+`init --template typescript --yes --no-git` and its Python counterpart. Only
+after the CLI version is actually on npm may the site advertise `bsbot init`
+as an available published command or templates pin that released CLI version.
+
 ## Release a version
 
 1. Make sure everything the new version needs on the bluesky.bot server is

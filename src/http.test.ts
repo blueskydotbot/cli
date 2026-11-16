@@ -13,7 +13,6 @@ import {
   type IncomingMessage,
   type ServerResponse,
 } from "node:http";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -29,7 +28,6 @@ import {
 import type { BotListing } from "./api.ts";
 
 const execute = promisify(execFile);
-const require = createRequire(import.meta.url);
 const directory = path.resolve(import.meta.dirname, "..");
 const DID = "did:plc:bbbbbbbbbbbbbbbbbbbbbbbb";
 const OTHER = "did:plc:cccccccccccccccccccccccc";
@@ -83,7 +81,7 @@ async function receive(request: IncomingMessage, response: ServerResponse) {
     body,
     agent: request.headers["user-agent"],
   });
-  // This receiver implements the f4150f5 API contract, not a Bluesky account.
+  // Receiver for the f4150f5 API contract plus disclosure additions in 675dd28.
   if (pathname.startsWith("/api/v1/resolve/")) {
     if (request.headers.authorization)
       return answer(response, 400, {
@@ -150,6 +148,34 @@ async function receive(request: IncomingMessage, response: ServerResponse) {
         reason: "brand",
       },
     });
+  if (
+    body.category === "ai" &&
+    (body.disclosure?.usesGenerativeAi ??
+      listing.disclosure.usesGenerativeAi) === null
+  )
+    return answer(response, 400, {
+      error: {
+        code: "invalid_listing",
+        message: "An explicit AI disclosure is required.",
+        field: "disclosure.usesGenerativeAi",
+        reason: "required_for_ai",
+      },
+    });
+  if (
+    typeof body.disclosure?.contact === "string" &&
+    /^(?:mailto:)?[^\s@/:]+@[^\s@/]+\.[^\s@/]+$/i.test(
+      body.disclosure.contact.trim(),
+    ) &&
+    body.disclosure.contactEmailPublic !== true
+  )
+    return answer(response, 400, {
+      error: {
+        code: "invalid_listing",
+        message: "Explicit email publication consent is required.",
+        field: "disclosure.contact",
+        reason: "email_consent",
+      },
+    });
   const before = JSON.stringify(listing);
   listing = {
     ...listing,
@@ -196,11 +222,7 @@ async function cli(args: string[], changes: NodeJS.ProcessEnv = {}) {
 }
 
 beforeAll(async () => {
-  await execute(
-    process.execPath,
-    [require.resolve("typescript/lib/tsc.js"), "-p", "tsconfig.json"],
-    { cwd: directory },
-  );
+  // npm pretest builds once, before parallel HTTP and tarball readers start.
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   if (!address || typeof address === "string")
@@ -324,6 +346,66 @@ describe("compiled CLI over real local HTTP", () => {
     expect(listing.languages).toEqual(["fr"]);
   });
 
+  it("transmits explicit disclosure booleans without inventing AI answers or losing contact consent", async () => {
+    listing.disclosure.contact = "old-contact@example.test";
+    listing.disclosure.contactEmailPublic = true;
+    const file = path.join(root, "listing.json");
+    const wanted = {
+      category: "ai",
+      disclosure: {
+        contact: "new-contact@example.test",
+        contactEmailPublic: true,
+        usesGenerativeAi: false,
+      },
+    };
+    await writeFile(file, JSON.stringify(wanted));
+    const result = await cli(["listing", "set", DID, "--file", file, "--json"]);
+    expect(result.code).toBe(0);
+    expect(
+      requests.find((request) => request.method === "PATCH")?.body,
+    ).toEqual(wanted);
+    requests = [];
+    expect(
+      (await cli(["listing", "set", DID, "--file", file, "--json"])).code,
+    ).toBe(0);
+    expect(requests.every((request) => request.method === "GET")).toBe(true);
+  });
+
+  it("keeps false email consent and reports required_for_ai without an invented answer or retry", async () => {
+    listing.disclosure.contactEmailPublic = true;
+    const file = path.join(root, "listing.json");
+    await writeFile(
+      file,
+      JSON.stringify({ disclosure: { contactEmailPublic: false } }),
+    );
+    expect(
+      (await cli(["listing", "set", DID, "--file", file, "--json"])).code,
+    ).toBe(0);
+    expect(
+      requests.find((request) => request.method === "PATCH")?.body,
+    ).toEqual({ disclosure: { contactEmailPublic: false } });
+    requests = [];
+    const refused = await cli([
+      "listing",
+      "set",
+      DID,
+      "--category",
+      "ai",
+      "--json",
+    ]);
+    expect(refused.code).toBe(1);
+    expect(JSON.parse(refused.stderr).error).toMatchObject({
+      code: "invalid_listing",
+      field: "disclosure.usesGenerativeAi",
+      reason: "required_for_ai",
+    });
+    expect(
+      requests
+        .filter((request) => request.method === "PATCH")
+        .map((request) => request.body),
+    ).toEqual([{ category: "ai" }]);
+  });
+
   it("shows type/scopes/bot without ever exposing the bearer token", async () => {
     const result = await cli(["whoami"]);
     expect(result.code).toBe(0);
@@ -332,6 +414,119 @@ describe("compiled CLI over real local HTTP", () => {
     expect(result.stdout).toContain(DID);
     expect(result.stdout + result.stderr).not.toContain(TOKEN);
   });
+
+  it("init explicitly prefills a bot through the listing API without persisting its token", async () => {
+    const dir = path.join(root, "starter");
+    const result = await cli([
+      "init",
+      dir,
+      "--template",
+      "typescript",
+      "--bot",
+      "weather.bluesky.bot",
+      "--yes",
+      "--no-git",
+      "--json",
+    ]);
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      dir,
+      template: "typescript",
+    });
+    expect(
+      JSON.parse(await readFile(path.join(dir, "bluesky-bot.json"), "utf8")),
+    ).toEqual(ORIGINAL);
+    const env = await readFile(path.join(dir, ".env.example"), "utf8");
+    expect(env).toContain('BLUESKY_HANDLE="weather.bluesky.bot"');
+    expect(env).toContain('BSBOT_TOKEN=""');
+    expect(env + result.stdout + result.stderr).not.toContain(TOKEN);
+    expect(requests.every((request) => request.method === "GET")).toBe(true);
+    expect(requests.some((request) => request.path === "/api/v1/me/bots")).toBe(
+      false,
+    );
+  });
+
+  it("a failed bot prefill leaves no destination or partially generated files", async () => {
+    const dir = path.join(root, "refused-starter");
+    const result = await cli([
+      "init",
+      dir,
+      "--template",
+      "python",
+      "--bot",
+      OTHER,
+      "--yes",
+      "--no-git",
+      "--json",
+    ]);
+    expect(result.code).toBe(1);
+    expect(JSON.parse(result.stderr).error.code).toBe("bot_not_found");
+    await expect(stat(dir)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  for (const publicEmail of [false, true])
+    it(`init never copies an email or hidden operator into files, output or Git (consent=${publicEmail})`, async () => {
+      const email = "synthetic-private-contact@example.test";
+      const hidden = "Synthetic Hidden Operator";
+      listing.disclosure.contact = email;
+      listing.disclosure.contactEmailPublic = publicEmail;
+      listing.operator = { name: hidden, shown: false };
+      const privateGet = await cli(["listing", "get", DID, "--json"]);
+      expect(privateGet.code).toBe(0);
+      expect(JSON.parse(privateGet.stdout).listing).toMatchObject({
+        disclosure: { contact: email, contactEmailPublic: publicEmail },
+        operator: { name: hidden, shown: false },
+      });
+      const dir = path.join(root, "private-starter");
+      const result = await cli(
+        ["init", dir, "--template", "python", "--bot", DID, "--yes", "--json"],
+        {
+          GIT_AUTHOR_NAME: "Synthetic Creator",
+          GIT_AUTHOR_EMAIL: "creator@users.noreply.github.com",
+          GIT_COMMITTER_NAME: "Synthetic Creator",
+          GIT_COMMITTER_EMAIL: "creator@users.noreply.github.com",
+        },
+      );
+      expect(result.code).toBe(0);
+      const generated = JSON.parse(
+        await readFile(path.join(dir, "bluesky-bot.json"), "utf8"),
+      );
+      expect(generated.disclosure).not.toHaveProperty("contact");
+      expect(generated.disclosure).not.toHaveProperty("contactEmailPublic");
+      expect(generated.operator).toEqual({ shown: false });
+      expect(result.stderr).toContain(
+        "disclosure.contact, disclosure.contactEmailPublic, operator.name",
+      );
+      const files = JSON.parse(result.stdout).files as string[];
+      const fileBytes = (
+        await Promise.all(
+          files.map((file) => readFile(path.join(dir, file), "utf8")),
+        )
+      ).join("\n");
+      const committed = (
+        await execute("git", ["-C", dir, "show", "HEAD:bluesky-bot.json"])
+      ).stdout;
+      for (const privateValue of [email, hidden, TOKEN])
+        expect(
+          result.stdout + result.stderr + fileBytes + committed,
+        ).not.toContain(privateValue);
+      requests = [];
+      expect(
+        (
+          await cli([
+            "listing",
+            "set",
+            DID,
+            "--file",
+            path.join(dir, "bluesky-bot.json"),
+            "--json",
+          ])
+        ).code,
+      ).toBe(0);
+      expect(requests.every((request) => request.method === "GET")).toBe(true);
+      expect(listing.disclosure.contact).toBe(email);
+      expect(listing.operator.name).toBe(hidden);
+    });
 
   it("keeps error details and rate limits in their existing JSON error envelope", async () => {
     const refused = await cli([

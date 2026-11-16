@@ -1,9 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Automatic triggers are paused during develop integration.
+  workflow_dispatch:
 
 permissions: {}
 

@@ -32,6 +32,15 @@ async function confirm(question: string): Promise<boolean> {
   }
 }
 
+async function prompt(question: string): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stderr });
+  try {
+    return await rl.question(question);
+  } finally {
+    rl.close();
+  }
+}
+
 const code = await run(process.argv.slice(2), {
   env: process.env,
   stdout: (text) => process.stdout.write(text),
@@ -39,6 +48,7 @@ const code = await run(process.argv.slice(2), {
   fetch,
   openBrowser,
   confirm: interactive ? confirm : null,
+  prompt: interactive ? prompt : null,
   color: Boolean(process.stdout.isTTY),
 });
 process.exitCode = code;

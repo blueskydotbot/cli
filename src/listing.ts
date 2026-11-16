@@ -21,6 +21,7 @@ const NESTED: Record<string, readonly string[] | null> = {
   disclosure: [
     "purpose",
     "contact",
+    "contactEmailPublic",
     "usesGenerativeAi",
     "automationLevel",
     "activities",
@@ -230,6 +231,16 @@ export function listingPatch(
       patch[field] = value;
     }
   }
+  // Replacing a contact requires the caller's explicit consent in this PATCH,
+  // even if that consent already had the same value. Never infer consent.
+  if (
+    isObject(patch.disclosure) &&
+    Object.hasOwn(patch.disclosure, "contact") &&
+    isObject(wanted.disclosure) &&
+    Object.hasOwn(wanted.disclosure, "contactEmailPublic")
+  ) {
+    patch.disclosure.contactEmailPublic = wanted.disclosure.contactEmailPublic;
+  }
   return patch;
 }
 
@@ -299,6 +310,7 @@ export function listingLines(listing: BotListing): string[] {
       "disclosure",
       sub("purpose", or(d.purpose)),
       sub("contact", or(d.contact)),
+      sub("email public", yesNo(d.contactEmailPublic)),
       sub("generative AI", yesNo(d.usesGenerativeAi)),
       sub("automation", or(d.automationLevel)),
       sub("activities", or(d.activities?.join(", "))),

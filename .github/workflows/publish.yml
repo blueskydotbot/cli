@@ -1,8 +1,7 @@
 name: Publish
 
 on:
-  push:
-    tags: ["v*"]
+  # Tag publishing is paused during develop integration. No automatic runs.
   # Re-runs the GitHub Release and the Bluesky post of a version already on
   # npm. Only from that version's tag (checked below): the bluesky
   # environment only accepts tags, and the notes come from the tagged files.
@@ -170,6 +169,9 @@ jobs:
             echo "::error title=Version mismatch::Tag $TAG, package.json $version."
             exit 1
           fi
+
+      - name: Verify bundled template provenance
+        run: npm run templates:release
 
       - name: Publish
         id: publish

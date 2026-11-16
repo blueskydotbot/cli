@@ -40,8 +40,8 @@ Requirements: macOS or Linux, Node.js 22 or later. No dependency.
 
 ## Development status
 
-This README describes the source under development. The listing, checkup and
-tool additions below are unreleased; use your installed `bsbot --help` to check
+This README describes the source under development. The listing, checkup, init
+and tool additions below are unreleased; use your installed `bsbot --help` to check
 its available commands. The server support must be deployed before a CLI
 version using it is published; see [RELEASING.md](RELEASING.md).
 
@@ -56,6 +56,7 @@ version using it is published; see [RELEASING.md](RELEASING.md).
 | `doctor [<bot>]` | The bot's checkup: what to fix in its disclosure and setup (every bot without `<bot>`; `--strict`, `--verbose`) |
 | `listing get <bot>` | The bot's directory listing |
 | `listing set <bot>` | Changes the listing from flags or `--file` (see below) |
+| `init [dir]` | Creates a local TypeScript or Python bot starter (see below) |
 | `check <name>` | Whether `<name>.bluesky.bot` is free (no sign-in needed) |
 | `claim <bot> <name>` | Claims `<name>.bluesky.bot` for a bot and switches the bot to it |
 | `switch <bot>` | Asks the bot's server again to use its handle |
@@ -126,8 +127,60 @@ checks every value with the dashboard's rules and saves all or nothing; a
 refused value prints its `field` and `reason`. `--dry-run` prints the
 difference and stops.
 
+Disclosure files can explicitly send `contactEmailPublic` and
+`usesGenerativeAi` booleans, including `false`. An e-mail contact needs
+`contactEmailPublic: true` in the same request. The CLI preserves that explicit
+consent when replacing a contact, but never invents consent or an AI answer.
+An AI-category refusal remains `invalid_listing` with
+`field: "disclosure.usesGenerativeAi"`, `reason: "required_for_ai"`.
+
 A token from before the listing existed cannot read or change it: run
 `bsbot login` again (`bsbot whoami` shows the token's scopes).
+
+### Start a bot
+
+```bash
+bsbot init my-bot --template python
+bsbot init my-bot --template typescript --bot weather.bluesky.bot --yes
+bsbot init my-bot --template python --no-git --yes --json
+```
+
+`init` asks for the language, directory and an optional bot when omitted.
+`--yes` skips questions, defaulting to TypeScript and `my-bluesky-bot`.
+It refuses a populated or symlink destination, including with `--yes`.
+It copies bundled files without downloading or installing anything, then runs
+`git init` and a first commit. Your normal Git identity, signing and hooks
+apply; `--no-git` skips those commands. If a commit fails, the generated files
+remain for review and a manual commit. `--json` returns exactly
+`{ "dir", "template", "files" }`.
+
+No account is needed to generate files. An unauthenticated `--bot` accepts a
+full handle without a network request. When signed in, an explicit `--bot`
+reads that bot's private listing; deploy tokens need its DID or full handle.
+Interactive mode also offers numbered owned-bot choices when the token
+explicitly permits listing handles; deploy and listing-only tokens are never
+used to enumerate bots. Leave the choice blank to generate without prefill,
+including when the optional lookup is unavailable offline.
+No API token or app password is written to generated files. All contact
+e-mails and hidden operator names are omitted from the generated listing,
+even if the platform can display the e-mail. Omitted properties stay absent
+in the partial listing file; syncing it preserves those server values. The
+notice names omitted fields without printing their values. Explicit
+`listing get` and `listing set --file` retain their private API contract.
+
+The CLI requires Node 22+, while running the generated TypeScript starter
+requires Node 24; the Python starter documents its own Python requirements.
+Review the starter README, `posts.txt`, `.env.example` and listing before
+running anything. `init` only prints repository/secret setup steps: it never
+pushes, sets a secret or enables Actions. Workflows in these development
+snapshots are manual-only, and posting stays in dry-run mode by default.
+
+The bundled development snapshots are pinned to commits
+`591e7a4c3e3f2f95f3f3056b998847a5cd25d062` (TypeScript) and
+`10bc1abd8c0be6981b7c13ce2792a9c46a141792` (Python). They are not published
+template releases. The CLI publication gate refuses them until each has a
+real immutable public tag whose tree matches the bundle; see
+[RELEASING.md](RELEASING.md#template-provenance).
 
 ### In CI
 

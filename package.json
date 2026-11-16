@@ -33,9 +33,13 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "vitest run",
-    "prepack": "npm run build"
+    "build": "tsc -p tsconfig.json && node scripts/build-templates.mjs",
+    "test": "vitest run src scripts",
+    "prepack": "npm run build",
+    "pretest": "npm run build",
+    "templates:check": "node scripts/build-templates.mjs --check",
+    "templates:release": "npm run build && node scripts/verify-template-provenance.mjs",
+    "prepublishOnly": "npm run templates:release"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

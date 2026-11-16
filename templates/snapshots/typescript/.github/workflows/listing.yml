@@ -1,0 +1,32 @@
+name: Listing
+# Automatic triggers are paused during develop-only preparation.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: listing
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Sync the creator-approved listing
+        env:
+          BSBOT_TOKEN: ${{ secrets.BSBOT_TOKEN }}
+          BOT_DID: ${{ vars.BOT_DID }}
+        run: |
+          if [ -z "$BSBOT_TOKEN" ] || [ -z "$BOT_DID" ]; then
+            echo "::notice::Set BSBOT_TOKEN and BOT_DID to enable listing sync."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            --request PATCH \
+            --header "Authorization: Bearer $BSBOT_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data-binary @bluesky-bot.json \
+            "https://bluesky.bot/api/v1/me/bots/$BOT_DID/listing"

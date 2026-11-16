@@ -1,0 +1,201 @@
+{
+  "version": 1,
+  "templates": {
+    "typescript": {
+      "repository": "blueskydotbot/bot-template-typescript",
+      "commit": "591e7a4c3e3f2f95f3f3056b998847a5cd25d062",
+      "ref": null,
+      "published": false,
+      "files": [
+        {
+          "path": ".env.example",
+          "mode": 420,
+          "sha256": "037fcdacadca2cc187d02f62f5f89bd89906a1b1089d5db21cb8a1e805974fe2"
+        },
+        {
+          "path": ".github/dependabot.yml",
+          "mode": 420,
+          "sha256": "9830571d21e0322171ad6506a1b747960680887059e74f92e317fe44fdd44076"
+        },
+        {
+          "path": ".github/workflows/bot.yml",
+          "mode": 420,
+          "sha256": "b8a42b94141218a841dc6908fa240079b2dc72670302ad876795b0533a58ba41"
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "mode": 420,
+          "sha256": "4bdf291c19c6f352667fe3471b489b085dccd3758a49e91ee20a7150e04f2b7f"
+        },
+        {
+          "path": ".github/workflows/listing.yml",
+          "mode": 420,
+          "sha256": "ff2450d2e6bcf2ac848a7c69f84ba851e2c63bb9228bd32379a905056afcccfb"
+        },
+        {
+          "path": ".gitignore",
+          "mode": 420,
+          "sha256": "911d0869d73ac7979ca9b488c92e677c51a014beb8a362fdb409986645a1ec5f"
+        },
+        {
+          "path": "LICENSE",
+          "mode": 420,
+          "sha256": "4045b29c5dcda6eac95d2bf6f97657f97f379f8cba052b6e9e820ee82b3fdae3"
+        },
+        {
+          "path": "README.md",
+          "mode": 420,
+          "sha256": "592759644112ad6ee953a1024b597d4c838280e7e8f0096b16e1c70f5cce3b1f"
+        },
+        {
+          "path": "SECURITY.md",
+          "mode": 420,
+          "sha256": "f6af78086fe901db59527162e26f467579ec85f29537c100c83f5c8f158c37aa"
+        },
+        {
+          "path": "bluesky-bot.json",
+          "mode": 420,
+          "sha256": "2a75ebada44e0874a5b2c496f03511491e8436ecfe6eff4f3561b3aef03a5363"
+        },
+        {
+          "path": "package.json",
+          "mode": 420,
+          "sha256": "b61baac62b30ea0dc6f3d0525f3cddc7caf0bea0abd6d1ee05f94c6f474d0d14"
+        },
+        {
+          "path": "pnpm-lock.yaml",
+          "mode": 420,
+          "sha256": "7ae598c85b0724d2d821ff95d563d45103bc079904c09389294399ff50ac3fea"
+        },
+        {
+          "path": "pnpm-workspace.yaml",
+          "mode": 420,
+          "sha256": "ac02d96368617c760f093cfe61fdec64b6244007ab3553e0d6621f706f54a353"
+        },
+        {
+          "path": "posts.txt",
+          "mode": 420,
+          "sha256": "3dd4773ecf2459ed550f89856a945a590fa325db2de6f4f7eeff74a1e0e5e140"
+        },
+        {
+          "path": "src/bot.ts",
+          "mode": 420,
+          "sha256": "7aff340d86cbb03bc3b2a3336b2a92fdb482400f97fa53d9cb4bf9e9b683d540"
+        },
+        {
+          "path": "src/reply-to-mentions.ts",
+          "mode": 420,
+          "sha256": "d34890afe25f1009841de7ebb138cada51b05bc7b6b3228363d6c2e5f1f5ff84"
+        },
+        {
+          "path": "src/self-label.ts",
+          "mode": 420,
+          "sha256": "2d8962580d7dabe818c2c3e925b5b4eed072407e001c9dc9efb5ceddfe6a59f8"
+        },
+        {
+          "path": "test/dry-run.test.mjs",
+          "mode": 420,
+          "sha256": "bc492f5c93647cd4439661119ebd51bc70278254ca599b1993e1d5261f866909"
+        },
+        {
+          "path": "test/helpers.test.mjs",
+          "mode": 420,
+          "sha256": "9c08adaa43f249f5b8d200ea639baf8cdc881d5e5706b5483405dff7901d5d4d"
+        }
+      ]
+    },
+    "python": {
+      "repository": "blueskydotbot/bot-template-python",
+      "commit": "10bc1abd8c0be6981b7c13ce2792a9c46a141792",
+      "ref": null,
+      "published": false,
+      "files": [
+        {
+          "path": ".env.example",
+          "mode": 420,
+          "sha256": "037fcdacadca2cc187d02f62f5f89bd89906a1b1089d5db21cb8a1e805974fe2"
+        },
+        {
+          "path": ".github/dependabot.yml",
+          "mode": 420,
+          "sha256": "f7d0e7983a785fc21c52093d493a10b6c4167427f4208add9110aa052762f17c"
+        },
+        {
+          "path": ".github/workflows/bot.yml",
+          "mode": 420,
+          "sha256": "3d10390ddd2d73bcbce6e084bf942c0e52d28edf923be108da9b86a9044444ae"
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "mode": 420,
+          "sha256": "0f5fcab3df2c2757c2ab0495957d5c985d92a2d990915adbc09fb4efcdadee82"
+        },
+        {
+          "path": ".github/workflows/listing.yml",
+          "mode": 420,
+          "sha256": "ff2450d2e6bcf2ac848a7c69f84ba851e2c63bb9228bd32379a905056afcccfb"
+        },
+        {
+          "path": ".gitignore",
+          "mode": 420,
+          "sha256": "911d0869d73ac7979ca9b488c92e677c51a014beb8a362fdb409986645a1ec5f"
+        },
+        {
+          "path": "LICENSE",
+          "mode": 420,
+          "sha256": "4045b29c5dcda6eac95d2bf6f97657f97f379f8cba052b6e9e820ee82b3fdae3"
+        },
+        {
+          "path": "README.md",
+          "mode": 420,
+          "sha256": "4772fefb06eeb9a9e747649717d4a400440283b0bcbe0c23b87e7e6fb1eb6052"
+        },
+        {
+          "path": "SECURITY.md",
+          "mode": 420,
+          "sha256": "f6af78086fe901db59527162e26f467579ec85f29537c100c83f5c8f158c37aa"
+        },
+        {
+          "path": "bluesky-bot.json",
+          "mode": 420,
+          "sha256": "2a75ebada44e0874a5b2c496f03511491e8436ecfe6eff4f3561b3aef03a5363"
+        },
+        {
+          "path": "bot.py",
+          "mode": 420,
+          "sha256": "cef0e33e6359f564d75b96cdf999d76fe8e18d5a62f0dd1a0b226ef1d041f493"
+        },
+        {
+          "path": "posts.txt",
+          "mode": 420,
+          "sha256": "3dd4773ecf2459ed550f89856a945a590fa325db2de6f4f7eeff74a1e0e5e140"
+        },
+        {
+          "path": "reply_to_mentions.py",
+          "mode": 420,
+          "sha256": "5c2b65199cae028ebcc6c144024b972390d161297a99f54389dd134678daa48e"
+        },
+        {
+          "path": "requirements.txt",
+          "mode": 420,
+          "sha256": "463ce8dabc555476b42882f135e25a5826ee0d9e8e6484a414ebb354f2374e42"
+        },
+        {
+          "path": "self_label.py",
+          "mode": 420,
+          "sha256": "6f00df8193dbb23c93d90647697b2c901ac7be60456d5d22d83e6ba4610e2cf5"
+        },
+        {
+          "path": "tests/test_dry_run.py",
+          "mode": 420,
+          "sha256": "5baa7250cc8c101a2ca292a70d6203df6147f5c005e69d13cd65f10d2a217a80"
+        },
+        {
+          "path": "tests/test_helpers.py",
+          "mode": 420,
+          "sha256": "113af436dceabce031a15456be0d40d32fc75da9f2dfff1bec6402b6bcc675b2"
+        }
+      ]
+    }
+  }
+}

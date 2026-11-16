@@ -26,6 +26,8 @@ import {
   EXIT_CHECK_FAILED,
 } from "./doctor.ts";
 import { UsageError } from "./errors.ts";
+import { initializeBot, type InitFlags } from "./init.ts";
+import { TemplateError } from "./templates.ts";
 import {
   type ListingFlags,
   listingFromFlags,
@@ -51,6 +53,7 @@ export type Io = {
   fetch: Fetch;
   openBrowser: (url: string) => void;
   confirm: ((question: string) => Promise<boolean>) | null;
+  prompt?: ((question: string) => Promise<string>) | null;
   loginTimeoutMs?: number;
   /** stdout is a terminal: `doctor` may colour its marks. */
   color?: boolean;
@@ -63,6 +66,11 @@ const HANDLE_SUFFIX = ".bluesky.bot";
 const HELP = `bsbot ${VERSION}: manage your Bluesky bots and their name${HANDLE_SUFFIX} handles.
 
 Usage: bsbot <command> [options]
+
+Start a bot
+  init [dir] [--template typescript|python] [--bot <bot>] [--no-git] [--yes]
+                           Copy a bundled starter; no download or password.
+                           --yes uses defaults without asking. Never overwrites.
 
 Account
   login [--no-browser] [--name <label>]
@@ -156,26 +164,30 @@ const OPTIONS = {
   "open-source": { type: "boolean" },
   "no-open-source": { type: "boolean" },
   "support-url": { type: "string" },
+  template: { type: "string" },
+  bot: { type: "string" },
+  "no-git": { type: "boolean" },
 } as const;
 
-type Values = ListingFlags & {
-  json?: boolean;
-  "api-url"?: string;
-  help?: boolean;
-  version?: boolean;
-  "no-browser"?: boolean;
-  name?: string;
-  yes?: boolean;
-  q?: string;
-  category?: string;
-  verified?: boolean;
-  limit?: string;
-  cursor?: string;
-  strict?: boolean;
-  verbose?: boolean;
-  file?: string;
-  "dry-run"?: boolean;
-};
+type Values = ListingFlags &
+  InitFlags & {
+    json?: boolean;
+    "api-url"?: string;
+    help?: boolean;
+    version?: boolean;
+    "no-browser"?: boolean;
+    name?: string;
+    yes?: boolean;
+    q?: string;
+    category?: string;
+    verified?: boolean;
+    limit?: string;
+    cursor?: string;
+    strict?: boolean;
+    verbose?: boolean;
+    file?: string;
+    "dry-run"?: boolean;
+  };
 
 type Context = {
   io: Io;
@@ -657,6 +669,43 @@ async function listing(ctx: Context): Promise<number> {
 
 const TOOL_SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
+async function selectInitBot(ctx: Context): Promise<string | undefined> {
+  let bots: MyBot[] = [];
+  try {
+    const token = envToken(ctx.io.env);
+    if (token || (await readCredentials(ctx.io.env))) {
+      const { api } = await signedIn(ctx);
+      const me = await api.me();
+      // Listing-only deploy tokens may prefill one bot, never enumerate others.
+      if (me.token.kind !== "deploy" && me.token.scopes?.includes("handles"))
+        bots = (await api.myBots()).bots;
+    }
+  } catch {
+    ctx.io.stderr(
+      "Owned bot choices are unavailable; enter a full handle/DID or leave blank.\n",
+    );
+  }
+  if (bots.length)
+    ctx.io.stderr(
+      `Your bots:\n${bots.map((bot, index) => `  ${index + 1}. ${bot.handle ?? bot.did}`).join("\n")}\n`,
+    );
+  const value = (
+    await ctx.io.prompt!(
+      "Bot number, full handle or DID to prefill (optional, blank to skip): ",
+    )
+  ).trim();
+  if (!value) return undefined;
+  if (/^[0-9]+$/.test(value)) {
+    const selected = bots[Number(value) - 1];
+    if (!selected)
+      throw new UsageError(
+        "Choose an existing bot number, a full handle or a DID.",
+      );
+    return selected.did;
+  }
+  return value;
+}
+
 async function tool(ctx: Context): Promise<number> {
   const slug = ctx.args[0];
   if (slug === undefined) {
@@ -698,6 +747,61 @@ async function tool(ctx: Context): Promise<number> {
 
 async function command(ctx: Context, name: string): Promise<number> {
   switch (name) {
+    case "init": {
+      const result = await initializeBot({
+        args: ctx.args,
+        flags: ctx.values,
+        env: ctx.io.env,
+        prompt: ctx.io.prompt,
+        selectBot: ctx.io.prompt ? () => selectInitBot(ctx) : undefined,
+        prefill: async (query) => {
+          const token = envToken(ctx.io.env);
+          const credentials = token ? null : await readCredentials(ctx.io.env);
+          const normalized = query.trim().replace(/^@/, "");
+          if (!token && !credentials) {
+            if (!/^[A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z0-9.-]+$/.test(normalized))
+              throw new UsageError(
+                "Without signing in, --bot needs a full handle. Use bsbot login to prefill a private listing.",
+              );
+            return { identifier: normalized.toLowerCase() };
+          }
+          const { api } = await signedIn(ctx);
+          const did = await resolveListingDid(
+            { ...ctx, args: [query] },
+            api,
+            0,
+          );
+          const result = await api.listing(did);
+          return {
+            identifier:
+              normalized.includes(".") && !normalized.startsWith("did:")
+                ? normalized.toLowerCase()
+                : did,
+            listing: result.listing,
+          };
+        },
+      });
+      if (result.development)
+        ctx.io.stderr(
+          "This starter is an unpublished development snapshot; review its files before running it.\n",
+        );
+      if (result.omitted.length)
+        ctx.io.stderr(
+          `Omitted from the generated Git project: ${result.omitted.join(", ")}.\n`,
+        );
+      const {
+        development: _development,
+        omitted: _omitted,
+        ...answer
+      } = result;
+      const directoryCommand = `'${result.dir.replaceAll("'", "'\\''")}'`;
+      print(
+        ctx,
+        answer,
+        `Created the ${result.template} starter in ${result.dir}.\n\nNext steps:\n  cd ${directoryCommand}\n  Review .env.example, posts.txt and bluesky-bot.json; never commit an app password.\n  gh repo create --source . --push\n  gh secret set BLUESKY_HANDLE\n  gh secret set BLUESKY_APP_PASSWORD\n  gh secret set BSBOT_TOKEN\n  Enable Actions only when you are ready.\n\n${ctx.apiUrl}/docs/templates`,
+      );
+      return 0;
+    }
     case "login":
       return login(ctx);
     case "logout":
@@ -886,9 +990,11 @@ export async function run(argv: string[], io: Io): Promise<number> {
         ? error.code
         : error instanceof LoginError
           ? error.code
-          : usage
-            ? "usage"
-            : "error";
+          : error instanceof TemplateError
+            ? error.code
+            : usage
+              ? "usage"
+              : "error";
     let message = error instanceof Error ? error.message : String(error);
     if (
       error instanceof ApiError &&

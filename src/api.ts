@@ -156,6 +156,7 @@ export type BotListing = {
   disclosure: {
     purpose: string | null;
     contact: string | null;
+    contactEmailPublic?: boolean;
     usesGenerativeAi: boolean | null;
     automationLevel: string | null;
     activities: string[];
