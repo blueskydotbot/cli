@@ -6,22 +6,31 @@ export const VERSION: string = JSON.parse(
 ).version;
 export const DEFAULT_API_URL = "https://bluesky.bot";
 
+/** The extra fields of an API error the CLI shows (`invalid_listing`…). */
+export const ERROR_DETAILS = ["field", "reason", "parameter", "scope"] as const;
+export type ErrorDetails = Partial<
+  Record<(typeof ERROR_DETAILS)[number], string>
+>;
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly retryAfterSeconds?: number;
+  readonly details: ErrorDetails;
 
   constructor(
     status: number,
     code: string,
     message: string,
     retryAfterSeconds?: number,
+    details: ErrorDetails = {},
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.details = details;
   }
 }
 
@@ -78,6 +87,7 @@ export type MyBot = {
   verifiedAt: string | null;
   listed: boolean;
   status: "active" | "suspended";
+  selfLabeled?: boolean | null;
 };
 
 export type PublicBot = {
@@ -99,7 +109,66 @@ export type Availability = {
 
 export type Me = {
   creator: { did: string; handle: string; displayName?: string | null };
-  token: { name: string; createdAt: string; expiresAt: string };
+  token: {
+    name: string;
+    createdAt: string;
+    expiresAt: string;
+    // Since bluesky.bot issue 284; absent from older servers.
+    scopes?: string[];
+    botDid?: string | null;
+    kind?: string;
+  };
+};
+
+/** `pass`, `warn`, `fail`, `info` or `unknown`; ids may be new. */
+export type Check = {
+  id: string;
+  status: string;
+  message: string;
+  fixUrl: string | null;
+  docsUrl: string | null;
+};
+
+export type Checkup = {
+  bot: { did: string; handle: string | null };
+  checkedAt: string;
+  summary: { passed: number; total: number; fail: number; warn: number };
+  checks: Check[];
+};
+
+export type UsageLine = {
+  kind: string;
+  description: string;
+  example?: string | null;
+};
+
+export type BotListing = {
+  listed: boolean;
+  category: string | null;
+  description: string | null;
+  languages: string[];
+  showRecentPosts: boolean;
+  operator: { name: string | null; shown: boolean };
+  usage: UsageLine[];
+  sourceUrl: string | null;
+  openSource: boolean;
+  supportUrl: string | null;
+  disclosure: {
+    purpose: string | null;
+    contact: string | null;
+    usesGenerativeAi: boolean | null;
+    automationLevel: string | null;
+    activities: string[];
+  };
+};
+
+/** Any subset of `BotListing`'s fields; `null` clears one. */
+export type BotListingPatch = Record<string, unknown>;
+
+export type ToolAnswer = { tool: string; url: string; result: unknown };
+
+export type OpenApiDocument = {
+  paths?: Record<string, { get?: { summary?: string } }>;
 };
 
 export type TokenGrant = {
@@ -121,7 +190,7 @@ export class Api {
   }
 
   private async call<T>(
-    method: "GET" | "POST" | "DELETE",
+    method: "GET" | "POST" | "PATCH" | "DELETE",
     path: string,
     body?: unknown,
   ): Promise<T> {
@@ -161,9 +230,14 @@ export class Api {
             code?: unknown;
             message?: unknown;
             retryAfterSeconds?: unknown;
-          };
+          } & Record<string, unknown>;
         } | null
       )?.error;
+      const details: ErrorDetails = {};
+      for (const key of ERROR_DETAILS) {
+        const value = error?.[key];
+        if (typeof value === "string") details[key] = value;
+      }
       throw new ApiError(
         response.status,
         typeof error?.code === "string" ? error.code : "http_error",
@@ -173,6 +247,7 @@ export class Api {
         typeof error?.retryAfterSeconds === "number"
           ? error.retryAfterSeconds
           : undefined,
+        details,
       );
     }
     if (json === null) {
@@ -216,6 +291,13 @@ export class Api {
     return this.call<Me>("GET", "/me");
   }
 
+  resolveHandle(handle: string) {
+    return this.call<{ did: string }>(
+      "GET",
+      `/resolve/${encodeURIComponent(handle)}`,
+    );
+  }
+
   myBots() {
     return this.call<{ bots: MyBot[] }>("GET", "/me/bots");
   }
@@ -247,6 +329,40 @@ export class Api {
       "POST",
       `/me/bots/${encodeURIComponent(did)}/release`,
     );
+  }
+
+  doctor(did: string) {
+    return this.call<Checkup>(
+      "GET",
+      `/me/bots/${encodeURIComponent(did)}/doctor`,
+    );
+  }
+
+  listing(did: string) {
+    return this.call<{ listing: BotListing }>(
+      "GET",
+      `/me/bots/${encodeURIComponent(did)}/listing`,
+    );
+  }
+
+  updateListing(did: string, patch: BotListingPatch) {
+    return this.call<{ listing: BotListing; changed: boolean }>(
+      "PATCH",
+      `/me/bots/${encodeURIComponent(did)}/listing`,
+      patch,
+    );
+  }
+
+  tool(slug: string, params: Array<[string, string]>) {
+    const qs = new URLSearchParams(params).toString();
+    return this.call<ToolAnswer>(
+      "GET",
+      `/tools/${encodeURIComponent(slug)}${qs ? `?${qs}` : ""}`,
+    );
+  }
+
+  openApi() {
+    return this.call<OpenApiDocument>("GET", "/openapi.json");
   }
 
   revokeToken() {

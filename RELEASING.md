@@ -75,9 +75,9 @@ still be on `main`.
 ## Versioning
 
 The public interface is: commands and options, the `--json` output and its
-error format, exit codes (0, 1, 2), environment variables (`BSBOT_API_URL`,
-`BSBOT_CONFIG_DIR`), the credentials file location and the minimum Node.js
-version. Human-readable output is not. Removing or changing any of these is a
+error format, exit codes (0, 1, 2, and 3 for `doctor`), environment variables
+(`BSBOT_API_URL`, `BSBOT_CONFIG_DIR`, `BSBOT_TOKEN`), the credentials file
+location and the minimum Node.js version. Human-readable output is not. Removing or changing any of these is a
 major change; while the version starts with `0.`, it bumps the minor version
 and everything else bumps the patch. Dropping a Node.js version that reached
 its end of life counts as breaking.
@@ -86,8 +86,9 @@ its end of life counts as breaking.
 
 The CLI talks to bluesky.bot: the `/cli/authorize` page,
 `POST /api/v1/cli/token`, `/api/v1/me/*` and the public
-`/api/v1/handles/{name}/availability` and `/api/v1/bots`. Published versions
-stay on users' machines for years, so:
+`/api/v1/handles/{name}/availability`, `/api/v1/bots`, `/api/v1/tools/*` and
+`/api/v1/openapi.json` (the list of tools). Published versions stay on users'
+machines for years, so:
 
 - the server only makes backwards-compatible changes to these endpoints; a
   breaking change goes to a new API version while the old one keeps working;

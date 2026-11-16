@@ -9,6 +9,37 @@ public interface.
 
 ## [Unreleased]
 
+### Added
+
+- `bsbot doctor` runs your bot's checkup, with a link to fix each problem.
+  It checks the Automation label, bio, avatar, description, operator line,
+  handle and listing of one bot, or of every bot (`--strict`, `--verbose`),
+  and exits with `3` when a check fails, for scripts and CI.
+- `bsbot listing` reads and edits a bot's directory listing, from a terminal
+  or a CI job. `listing set` takes flags or `--file listing.json`, sends only
+  the fields that differ (nothing when none does), and `--dry-run` shows the
+  difference.
+- `BSBOT_TOKEN` gives a token to use instead of the saved one, for CI.
+- `bsbot tool` lists the free tools of Bluesky.bot, and
+  `bsbot tool <slug> key=value ...` runs one, with higher limits when you
+  are signed in.
+- `bsbot whoami` shows what the token may do (its scopes), when the server
+  says.
+- `--json` errors carry the server's `field`, `reason`, `parameter` and
+  `scope` when it sends them.
+
+### Changed
+
+- Deploy-token listing commands accept a full handle through anonymous public
+  resolution without enumerating owned bots; `whoami` also shows token type.
+- Listing options accept `--listed true|false`, `--category none`,
+  `--no-description`, `--operator`, `--no-operator`, `--show-operator` and
+  `--hide-operator` while preserving the original aliases.
+- An explicitly empty `BSBOT_TOKEN` is refused, without reading saved credentials.
+
+- A token that lacks a permission (`403 insufficient_scope`) prints the
+  server's message and asks you to run `bsbot login` again.
+
 ## [0.1.1] - 2026-11-12
 
 ### Changed
