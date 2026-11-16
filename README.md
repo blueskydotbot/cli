@@ -167,6 +167,9 @@ even if the platform can display the e-mail. Omitted properties stay absent
 in the partial listing file; syncing it preserves those server values. The
 notice names omitted fields without printing their values. Explicit
 `listing get` and `listing set --file` retain their private API contract.
+An empty contact or hidden operator name is omitted too, so the generated
+file cannot clear a private value added later. To explicitly clear a field,
+edit the listing file yourself or use the corresponding listing option.
 
 The CLI requires Node 22+, while running the generated TypeScript starter
 requires Node 24; the Python starter documents its own Python requirements.

@@ -435,7 +435,15 @@ describe("compiled CLI over real local HTTP", () => {
     });
     expect(
       JSON.parse(await readFile(path.join(dir, "bluesky-bot.json"), "utf8")),
-    ).toEqual(ORIGINAL);
+    ).toEqual({
+      ...ORIGINAL,
+      disclosure: {
+        purpose: null,
+        usesGenerativeAi: null,
+        automationLevel: null,
+        activities: [],
+      },
+    });
     const env = await readFile(path.join(dir, ".env.example"), "utf8");
     expect(env).toContain('BLUESKY_HANDLE="weather.bluesky.bot"');
     expect(env).toContain('BSBOT_TOKEN=""');
@@ -464,10 +472,13 @@ describe("compiled CLI over real local HTTP", () => {
     await expect(stat(dir)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
-  for (const publicEmail of [false, true])
-    it(`init never copies an email or hidden operator into files, output or Git (consent=${publicEmail})`, async () => {
+  for (const { publicEmail, hidden } of [
+    { publicEmail: false, hidden: "Synthetic Hidden Operator" },
+    { publicEmail: true, hidden: "Synthetic Hidden Operator" },
+    { publicEmail: false, hidden: null },
+  ])
+    it(`init never copies an email or hidden operator into files, output or Git (consent=${publicEmail}, emptyName=${hidden === null})`, async () => {
       const email = "synthetic-private-contact@example.test";
-      const hidden = "Synthetic Hidden Operator";
       listing.disclosure.contact = email;
       listing.disclosure.contactEmailPublic = publicEmail;
       listing.operator = { name: hidden, shown: false };
@@ -507,9 +518,10 @@ describe("compiled CLI over real local HTTP", () => {
         await execute("git", ["-C", dir, "show", "HEAD:bluesky-bot.json"])
       ).stdout;
       for (const privateValue of [email, hidden, TOKEN])
-        expect(
-          result.stdout + result.stderr + fileBytes + committed,
-        ).not.toContain(privateValue);
+        if (privateValue !== null)
+          expect(
+            result.stdout + result.stderr + fileBytes + committed,
+          ).not.toContain(privateValue);
       requests = [];
       expect(
         (
@@ -527,6 +539,44 @@ describe("compiled CLI over real local HTTP", () => {
       expect(listing.disclosure.contact).toBe(email);
       expect(listing.operator.name).toBe(hidden);
     });
+
+  it("a generated empty private field stays absent and cannot clear a later private value", async () => {
+    listing.operator = { name: null, shown: false };
+    listing.disclosure.contact = null;
+    listing.disclosure.contactEmailPublic = false;
+    const dir = path.join(root, "initially-empty-private-fields");
+    expect(
+      (
+        await cli([
+          "init",
+          dir,
+          "--template",
+          "python",
+          "--bot",
+          DID,
+          "--yes",
+          "--no-git",
+          "--json",
+        ])
+      ).code,
+    ).toBe(0);
+    const file = path.join(dir, "bluesky-bot.json");
+    const generated = JSON.parse(await readFile(file, "utf8"));
+    expect(generated.disclosure).not.toHaveProperty("contact");
+    expect(generated.disclosure).not.toHaveProperty("contactEmailPublic");
+    expect(generated.operator).not.toHaveProperty("name");
+    listing.disclosure.contact = "later-private-contact@example.test";
+    listing.operator.name = "Later Hidden Operator";
+    requests = [];
+    const sync = await cli(["listing", "set", DID, "--file", file, "--json"]);
+    expect(sync.code).toBe(0);
+    expect(JSON.parse(sync.stdout).changed).toBe(false);
+    expect(requests.every((request) => request.method === "GET")).toBe(true);
+    expect(listing.disclosure.contact).toBe(
+      "later-private-contact@example.test",
+    );
+    expect(listing.operator.name).toBe("Later Hidden Operator");
+  });
 
   it("keeps error details and rate limits in their existing JSON error envelope", async () => {
     const refused = await cli([

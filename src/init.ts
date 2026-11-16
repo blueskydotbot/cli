@@ -53,20 +53,17 @@ function shareableListing(listing: BotListing): {
   };
   const omitted: OmittedField[] = [];
   if (
-    typeof disclosure.contact === "string" &&
-    /^(?:mailto:)?[^\s@/:]+@[^\s@/]+\.[^\s@/]+$/i.test(
-      disclosure.contact.trim(),
-    )
+    disclosure.contact === null ||
+    (typeof disclosure.contact === "string" &&
+      /^(?:mailto:)?[^\s@/:]+@[^\s@/]+\.[^\s@/]+$/i.test(
+        disclosure.contact.trim(),
+      ))
   ) {
     delete disclosure.contact;
     delete disclosure.contactEmailPublic;
     omitted.push("disclosure.contact", "disclosure.contactEmailPublic");
   }
-  if (
-    operator.shown === false &&
-    operator.name !== null &&
-    operator.name !== undefined
-  ) {
+  if (operator.shown === false) {
     delete operator.name;
     omitted.push("operator.name");
   }
