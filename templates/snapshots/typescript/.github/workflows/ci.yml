@@ -17,6 +17,7 @@ jobs:
           node-version: '24'
       - run: npm install --global pnpm@12.18.0 --ignore-scripts
       - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
       - run: pnpm start
         env:
           DRY_RUN: 'true'

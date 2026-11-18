@@ -6,10 +6,11 @@ release preparation stores no npm credential and does not run that workflow.
 
 ## Current release preparation
 
-The `0.2.0` candidate is prepared from the reviewed `develop` source. Its
-changelog date is 16 November 2026 in Europe/Paris. The registry readback during
-preparation reported only `0.1.0`; the source-only `0.1.1` changes are included
-in `0.2.0`, without inventing an earlier npm release.
+The `0.2.0` candidate is prepared from the reviewed `develop` source and marked
+unreleased in the changelog. The npm registry readback on 18 November 2026
+reported `latest: 0.1.1`, published on 17 November, with the Repository and Bugs
+links pointing to `blueskydotbot/cli`. This is evidence for `0.1.1`, not for a
+publication of the `0.2.0` candidate.
 
 The npm publication request does not authorize GitHub Actions, pull requests,
 pushes to `main` or `staging`, deployments, GitHub Releases or announcements.
@@ -27,9 +28,8 @@ scripts or activate Actions. No credential belongs in these files or logs.
 ### Repository metadata on npm
 
 npm's Repository and Bugs links come from the published version's metadata.
-The published `0.1.0` can therefore still link to `bsbot-cli` while the reviewed
-source already names `blueskydotbot/cli`. Both `package.json` and the packed
-`0.2.0` package must contain:
+The current published `0.1.1` has the corrected links. Both `package.json` and
+the packed `0.2.0` package must retain:
 
 ```json
 {
@@ -52,6 +52,25 @@ npm view @blueskydotbot/cli dist-tags --json
 
 Changing GitHub or the working-tree manifest alone does not replace the
 metadata of an already published npm version.
+
+## Development-only template publication
+
+The standalone TypeScript and Python sources are prepared on `develop`, with
+Actions disabled by the repository owner and all retained workflows limited to
+manual dispatch. This phase publishes source branches only. It creates no
+stable tag, npm version, GitHub Release, announcement or scheduled bot run.
+
+Each bundled snapshot must match its standalone commit's complete blob tree,
+including dotfiles, workflow files and executable bits. After a template
+changes, commit its standalone `develop` source first, copy that exact tree to
+`templates/snapshots/<name>`, then update the manifest commit and complete
+file/hash list. Keep `published: false` and `ref: null` throughout this phase,
+even when the source commit is reachable on GitHub.
+
+The builder compares canonical Git modes (`100644` and `100755`), so a checkout
+under a restrictive umask remains valid. Changing a file's executable bit or
+bytes still fails the integrity check. The later immutable-tag release guard
+is unchanged.
 
 ## Template provenance
 
@@ -96,8 +115,9 @@ authorize a workflow dispatch, tag, `main` push, release or social post.
    npm version 0.2.0 --no-git-tag-version
    ```
 
-   Rename the `## [Unreleased]` section of `CHANGELOG.md` to
-   `## [0.2.0] - YYYY-MM-DD` and add a new empty `## [Unreleased]` above it.
+   Give the prepared `## [0.2.0] - Unreleased` section of `CHANGELOG.md` its
+   actual publication date, `## [0.2.0] - YYYY-MM-DD`, and keep an empty
+   `## [Unreleased]` above it.
    Put the most important entry first: the first bullets become the Bluesky
    announcement. A breaking change starts with **Breaking:**.
 3. Open a pull request to `main`, wait for CI, merge.

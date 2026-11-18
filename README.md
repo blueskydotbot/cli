@@ -7,9 +7,10 @@ terminal: sign in with Bluesky, then claim, switch, verify and release handles.
 No dependencies, Node.js 22+.
 
 Signing in happens in your browser, so no password ever goes through the
-terminal. You can also run your bots' checkup, edit their directory listing
-(from a CI job too), browse the directory of [Bluesky.bot](https://bluesky.bot)
-and run its free tools.
+terminal. The `0.2.0` development candidate also adds your bots' checkup,
+directory listing edits (from a CI job too), bundled starters and the free
+tools of [Bluesky.bot](https://bluesky.bot). These new commands are documented
+below; they are not a claim that `0.2.0` is available on npm.
 
 ```bash
 npm install --global @blueskydotbot/cli
@@ -17,7 +18,6 @@ bsbot login
 bsbot check weather
 bsbot claim weather.bsky.social weather
 bsbot verify weather
-bsbot doctor weather
 ```
 
 ## Install
@@ -40,9 +40,10 @@ Requirements: macOS or Linux, Node.js 22 or later. No dependency.
 
 ## Release source
 
-This README describes the `0.2.0` release source. Listing, checkup, init and
-tool commands were added after npm version `0.1.0`; source version `0.1.1`
-was never published. Preparing or packing this source does not publish it.
+This README describes the unreleased `0.2.0` source. The npm registry check on
+18 November 2026 returned `latest: 0.1.1`, published on 17 November, with the
+Repository and Bugs links pointing to `blueskydotbot/cli`. Preparing or packing
+the `0.2.0` source does not publish it.
 Check `npm view @blueskydotbot/cli dist-tags` and your installed `bsbot --help`
 for availability. The server support must be deployed before a CLI version
 using it is published; see [RELEASING.md](RELEASING.md).
@@ -180,10 +181,11 @@ running anything. `init` only prints repository/secret setup steps: it never
 pushes, sets a secret or enables Actions. Workflows in these development
 snapshots are manual-only, and posting stays in dry-run mode by default.
 
-The bundled development snapshots are pinned to commits
-`591e7a4c3e3f2f95f3f3056b998847a5cd25d062` (TypeScript) and
-`10bc1abd8c0be6981b7c13ce2792a9c46a141792` (Python). They are not published
-template releases. The CLI publication gate refuses them until each has a
+The bundled development snapshots are pinned to the complete Git trees listed
+in [`templates/manifest.json`](templates/manifest.json). Their standalone
+development source belongs to each template repository's `develop` branch;
+neither a development branch nor this bundle is a published template release.
+The CLI publication gate refuses them until each has a
 real immutable public tag whose tree matches the bundle; see
 [RELEASING.md](RELEASING.md#template-provenance).
 

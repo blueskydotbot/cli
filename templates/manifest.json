@@ -3,7 +3,7 @@
   "templates": {
     "typescript": {
       "repository": "blueskydotbot/bot-template-typescript",
-      "commit": "591e7a4c3e3f2f95f3f3056b998847a5cd25d062",
+      "commit": "cfa1a7e8ea29092464878e98f979eb9888bed74f",
       "ref": null,
       "published": false,
       "files": [
@@ -25,7 +25,7 @@
         {
           "path": ".github/workflows/ci.yml",
           "mode": 420,
-          "sha256": "4bdf291c19c6f352667fe3471b489b085dccd3758a49e91ee20a7150e04f2b7f"
+          "sha256": "67cac01191d45875bad6f006ef741a718a11cfcf6eac22d7bd71faa548d313dc"
         },
         {
           "path": ".github/workflows/listing.yml",
@@ -45,7 +45,7 @@
         {
           "path": "README.md",
           "mode": 420,
-          "sha256": "592759644112ad6ee953a1024b597d4c838280e7e8f0096b16e1c70f5cce3b1f"
+          "sha256": "20644bfe7e15d30a691e86bb48dc81ad24b80485a602c9b324fca1ef86c159b8"
         },
         {
           "path": "SECURITY.md",
@@ -60,12 +60,12 @@
         {
           "path": "package.json",
           "mode": 420,
-          "sha256": "b61baac62b30ea0dc6f3d0525f3cddc7caf0bea0abd6d1ee05f94c6f474d0d14"
+          "sha256": "e4b47527d8a99a54b9c037f2e590a95290eacbae6def69176a99f8f1ea999356"
         },
         {
           "path": "pnpm-lock.yaml",
           "mode": 420,
-          "sha256": "7ae598c85b0724d2d821ff95d563d45103bc079904c09389294399ff50ac3fea"
+          "sha256": "ba6d3910f709c602708963e499a4fe1f60916f416f808a690a7917f9a846d101"
         },
         {
           "path": "pnpm-workspace.yaml",
@@ -80,7 +80,7 @@
         {
           "path": "src/bot.ts",
           "mode": 420,
-          "sha256": "7aff340d86cbb03bc3b2a3336b2a92fdb482400f97fa53d9cb4bf9e9b683d540"
+          "sha256": "314cade5358ffd706b212109f43fca738c1e02603efd9ff75fe0e42a988ee8a2"
         },
         {
           "path": "src/reply-to-mentions.ts",
@@ -101,12 +101,17 @@
           "path": "test/helpers.test.mjs",
           "mode": 420,
           "sha256": "9c08adaa43f249f5b8d200ea639baf8cdc881d5e5706b5483405dff7901d5d4d"
+        },
+        {
+          "path": "tsconfig.json",
+          "mode": 420,
+          "sha256": "ea4e5e416a60c40811419d272813249594bbcc7a3c84afd6653a6babd985ab74"
         }
       ]
     },
     "python": {
       "repository": "blueskydotbot/bot-template-python",
-      "commit": "10bc1abd8c0be6981b7c13ce2792a9c46a141792",
+      "commit": "43b876ebbb3ae448ff563d0029f6a1a5d0a52f4e",
       "ref": null,
       "published": false,
       "files": [
@@ -148,7 +153,7 @@
         {
           "path": "README.md",
           "mode": 420,
-          "sha256": "4772fefb06eeb9a9e747649717d4a400440283b0bcbe0c23b87e7e6fb1eb6052"
+          "sha256": "e6b9ff598a8f5e7656c0c4e06b4d0a445e0992e827dde5a8d548ffcaae172fb2"
         },
         {
           "path": "SECURITY.md",

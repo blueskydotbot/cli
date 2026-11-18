@@ -9,11 +9,10 @@ public interface.
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-11-16
+## [0.2.0] - Unreleased
 
-The repository metadata changes previously labelled `0.1.1` were never
-published to npm; they are included here. Preparing this release source does
-not establish that the package is available in the registry.
+This section describes the development candidate. Preparing this source or a
+local archive does not establish that `0.2.0` is available in the registry.
 
 ### Added
 
@@ -42,6 +41,9 @@ not establish that the package is available in the registry.
 
 ### Changed
 
+- Bundled TypeScript starters include a strict typecheck and preserve complete
+  standalone development sources. Template builds accept restrictive checkout
+  umasks while continuing to verify every byte and executable bit.
 - Deploy-token listing commands accept a full handle through anonymous public
   resolution without enumerating owned bots; `whoami` also shows token type.
 - Listing options accept `--listed true|false`, `--category none`,
@@ -58,6 +60,14 @@ not establish that the package is available in the registry.
   [github.com/blueskydotbot/cli](https://github.com/blueskydotbot/cli).
 - The package's repository and issue links point to the new repository (it
   was renamed from blueskydotbot/bsbot-cli).
+
+## [0.1.1] - 2026-11-17
+
+### Changed
+
+- The published package metadata points to `blueskydotbot/cli` for its source
+  repository and issues. npm's version, `latest` tag, links and publication
+  timestamp were verified on 18 November 2026.
 
 ## [0.1.0] - 2026-11-12
 

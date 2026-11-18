@@ -1,8 +1,17 @@
 # Your small Bluesky bot (typescript)
 
-Review these files, then use this repository as a GitHub template or clone it for your own bot.
+Review these files, then clone the development branch for your own bot.
 This is source code for running your own bot; it does not provision hosting on Bluesky.bot.
-Use Node.js 24 and pnpm 12.18.0 for TypeScript, or Python 3.13 for Python.
+Use Node.js 24 and pnpm 12.18.0.
+
+## Development source
+
+```sh
+git clone --branch develop https://github.com/blueskydotbot/bot-template-typescript.git my-bluesky-bot
+cd my-bluesky-bot
+```
+
+This branch is a development snapshot, without a stable template tag. A future release can populate the default branch for GitHub's **Use this template** flow. The current workflows are manual-only; cloning this code does not enable a posting schedule or provision secrets.
 
 ## Start safely
 
@@ -33,4 +42,4 @@ pnpm start
 
 ## Tests and maintenance
 
-Run `pnpm test`. Tests use mocks and dry runs, no live account. The CI sample never receives posting secrets. Dependencies and GitHub actions are pinned; automatic Dependabot update PRs are paused. Review updates before merging, and enable the maintenance workflows only when ready. License: MIT-0, no attribution required.
+Run `pnpm typecheck` and `pnpm test`. Tests use mocks and dry runs, no live account. The CI sample never receives posting secrets. Dependencies and GitHub actions are pinned; automatic Dependabot update PRs are paused. Review updates before merging, and enable the maintenance workflows only when ready. License: MIT-0, no attribution required.

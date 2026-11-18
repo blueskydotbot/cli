@@ -54,9 +54,12 @@ for (const name of TEMPLATE_NAMES) {
     if (!info.isFile() || info.isSymbolicLink())
       throw new Error(`Not a regular template file: ${name}`);
     const bytes = await readFile(file);
+    // Git records the executable bit, not group/other permissions. A checkout
+    // under umask 077 has 0600/0700 files with the same canonical Git modes.
+    const gitMode = info.mode & 0o100 ? 0o755 : 0o644;
     if (
       createHash("sha256").update(bytes).digest("hex") !== expected.sha256 ||
-      (info.mode & 0o777) !== expected.mode
+      gitMode !== expected.mode
     )
       throw new Error(`Template bytes/mode differ: ${name}/${expected.path}`);
     payload.files.push({ ...expected, content: bytes.toString("base64") });

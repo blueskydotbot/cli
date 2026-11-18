@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AtpAgent, RichText } from "@atproto/api";
-import { replyToMentions } from "./reply-to-mentions";
-import { ensureSelfLabel } from "./self-label";
+import { replyToMentions } from "./reply-to-mentions.ts";
+import { ensureSelfLabel } from "./self-label.ts";
 
 export async function runBot(
   env: NodeJS.ProcessEnv = process.env,

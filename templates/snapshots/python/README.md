@@ -1,8 +1,17 @@
 # Your small Bluesky bot (python)
 
-Review these files, then use this repository as a GitHub template or clone it for your own bot.
+Review these files, then clone the development branch for your own bot.
 This is source code for running your own bot; it does not provision hosting on Bluesky.bot.
-Use Node.js 24 and pnpm 12.18.0 for TypeScript, or Python 3.13 for Python.
+Use Python 3.13.
+
+## Development source
+
+```sh
+git clone --branch develop https://github.com/blueskydotbot/bot-template-python.git my-bluesky-bot
+cd my-bluesky-bot
+```
+
+This branch is a development snapshot, without a stable template tag. A future release can populate the default branch for GitHub's **Use this template** flow. The current workflows are manual-only; cloning this code does not enable a posting schedule or provision secrets.
 
 ## Start safely
 
